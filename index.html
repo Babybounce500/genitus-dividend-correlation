@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GENITUS CORRELATION MATRIX</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root{--bg:#f4f7fb;--surface:#ffffff;--panel:#ffffff;--border:#d9e2ec;--accent:#0e7490;--gold:#b45309;--green:#15803d;--red:#b91c1c;--muted:#52606d;--text:#1e293b;--bright:#0f172a;--mono:'Space Mono',monospace;--sans:'Rajdhani',sans-serif;}
+    :root.dark-theme{--bg:#080c10;--surface:#0d1117;--panel:#111820;--border:#1e2d3d;--accent:#00d4ff;--gold:#f0c040;--green:#00ff88;--red:#ff3b5c;--muted:#7d92a8;--text:#c8d8e8;--bright:#ffffff;}
+    *{margin:0;padding:0;box-sizing:border-box;}
+    body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:15px;min-height:100vh;transition:background .25s,color .25s;}
+    header{background:var(--surface);border-bottom:1px solid var(--border);padding:0 20px;display:flex;align-items:center;justify-content:space-between;height:56px;position:sticky;top:0;z-index:200;}
+    .logo{display:flex;align-items:center;gap:12px;}
+    .logo-mark{width:32px;height:32px;border:2px solid var(--gold);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:14px;color:var(--gold);}
+    .logo-text{font-family:var(--mono);font-size:13px;letter-spacing:3px;color:var(--bright);}
+    .logo-sub{font-family:var(--mono);font-size:10px;letter-spacing:2px;color:var(--muted);display:block;margin-top:1px;}
+    #themeToggleBtn{background:none;border:1px solid var(--border);color:var(--accent);width:30px;height:30px;border-radius:2px;cursor:pointer;font-size:14px;}
+    .layout{max-width:1200px;margin:0 auto;padding:18px;}
+    .row{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-bottom:14px;}
+    .field-label{font-family:var(--mono);font-size:10px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:4px;display:block;}
+    select,input[type="text"]{background:var(--surface);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:12px;padding:8px 10px;outline:none;border-radius:2px;}
+    .btn{font-family:var(--mono);font-size:11px;letter-spacing:1px;padding:8px 12px;border:1px solid var(--gold);background:transparent;color:var(--gold);cursor:pointer;border-radius:2px;text-transform:uppercase;}
+    .btn:hover{background:var(--gold);color:var(--bg);}
+    .btn-red{border-color:var(--red);color:var(--red);}
+    .picker-list{max-height:220px;overflow-y:auto;border:1px solid var(--border);border-radius:2px;background:var(--surface);}
+    .picker-item{padding:7px 10px;border-bottom:1px solid var(--border);cursor:pointer;font-size:12px;display:flex;justify-content:space-between;}
+    .picker-item:hover{background:rgba(180,83,9,0.08);}
+    .picker-item .sym{font-family:var(--mono);color:var(--accent);font-weight:700;}
+    .wl-row{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border:1px solid var(--border);border-radius:2px;margin:0 6px 6px 0;background:var(--surface);font-family:var(--mono);font-size:11px;}
+    .wl-row button{border:0;background:none;color:var(--red);cursor:pointer;font-family:var(--mono);}
+    .panel-block{background:var(--surface);border:1px solid var(--border);border-radius:3px;padding:14px;margin-bottom:16px;}
+    .panel-block h3{font-family:var(--mono);font-size:11px;letter-spacing:2px;color:var(--gold);text-transform:uppercase;margin-bottom:10px;}
+    .panel-block p.note{font-size:12px;color:var(--muted);margin-top:8px;line-height:1.6;}
+    table.matrix{border-collapse:collapse;font-family:var(--mono);font-size:11px;}
+    table.matrix th,table.matrix td{border:1px solid var(--border);padding:8px 10px;text-align:center;min-width:70px;}
+    table.matrix th{background:var(--panel);color:var(--muted);font-size:10px;}
+    table.matrix td.diag{background:var(--panel);color:var(--muted);}
+    table.matrix td.insufficient{color:var(--muted);font-style:italic;font-size:10px;}
+    .legend{display:flex;gap:14px;align-items:center;margin-top:10px;font-family:var(--mono);font-size:10px;color:var(--muted);flex-wrap:wrap;}
+    .legend-swatch{width:14px;height:14px;display:inline-block;border-radius:2px;vertical-align:middle;margin-right:4px;}
+    .empty{padding:30px;text-align:center;color:var(--muted);font-family:var(--mono);font-size:11px;}
+  </style>
+</head>
+<body>
+<header>
+  <div class="logo"><div class="logo-mark">⇄</div><div><span class="logo-text">GENITUS</span><span class="logo-sub">CORRELATION MATRIX</span></div></div>
+  <button id="themeToggleBtn" title="Toggle theme">🌙</button>
+</header>
+<div class="layout">
+  <div class="panel-block">
+    <h3>Build Your Watchlist (2–8 symbols recommended)</h3>
+    <div class="row">
+      <div><span class="field-label">Exchange</span><select id="exSelect" onchange="onExchangeChange()"></select></div>
+      <div><span class="field-label">Search</span><input type="text" id="searchInput" oninput="renderPicker()" placeholder="Symbol or name..."></div>
+    </div>
+    <div class="picker-list" id="pickerList"><div class="empty">Select an exchange to browse confirmed payers.</div></div>
+    <div style="margin-top:12px" id="watchlistChips"></div>
+    <div class="row" style="margin-top:10px"><button class="btn" onclick="computeMatrix()">COMPUTE CORRELATION MATRIX</button></div>
+  </div>
+
+  <div class="panel-block" id="matrixResult" style="display:none">
+    <h3>Annual-Return Correlation</h3>
+    <div id="matrixTableWrap" style="overflow-x:auto"></div>
+    <div class="legend">
+      <span><span class="legend-swatch" style="background:rgba(255,59,92,0.5)"></span>+0.7 to +1.0 (moves together — low diversification)</span>
+      <span><span class="legend-swatch" style="background:rgba(240,192,64,0.35)"></span>-0.3 to +0.7 (partial diversification)</span>
+      <span><span class="legend-swatch" style="background:rgba(0,255,136,0.45)"></span>below -0.3 (genuine diversifier)</span>
+    </div>
+    <p class="note"><b>Methodik-Hinweis:</b> Berechnet auf JÄHRLICHER Auflösung (letzter gecachter Dividenden-Kurs pro Kalenderjahr, nicht Tageskurse — die haben wir nicht gecacht). Paare mit weniger als 3 gemeinsamen Jahren zeigen "n/a" statt einer unsicheren Korrelation. Zwei Positionen mit hoher Korrelation (rot) sind wirtschaftlich eher eine Wette als zwei — nützlich, um Scheindiversifikation im Depot zu erkennen.</p>
+  </div>
+</div>
+<script>
+  const SUMMARY_URL = 'https://raw.githubusercontent.com/Babybounce500/genitus-ticker-cache/main/dividend-summary.csv';
+  const HISTORY_URL = 'https://raw.githubusercontent.com/Babybounce500/genitus-ticker-cache/main/dividend-history.csv';
+  (function(){
+    const KEY='genitusTheme:corr';
+    function applyTheme(t){ document.documentElement.classList.toggle('dark-theme', t==='dark'); localStorage.setItem(KEY,t); const btn=document.getElementById('themeToggleBtn'); if(btn) btn.textContent = t==='dark' ? '☀' : '🌙'; }
+    window.__theme = localStorage.getItem(KEY) || 'light';
+    applyTheme(window.__theme);
+    document.addEventListener('DOMContentLoaded', function(){ const btn=document.getElementById('themeToggleBtn'); if(btn) btn.addEventListener('click', function(){ window.__theme = window.__theme==='dark' ? 'light' : 'dark'; applyTheme(window.__theme); }); });
+  })();
+  function parseCSVLine(line){
+    const out=[]; let cur=''; let inQ=false;
+    for(let i=0;i<line.length;i++){ const c=line[i];
+      if(inQ){ if(c==='"'){ if(line[i+1]==='"'){cur+='"';i++;} else inQ=false; } else cur+=c; }
+      else { if(c===','){ out.push(cur); cur=''; } else if(c==='"'){ inQ=true; } else cur+=c; } }
+    out.push(cur); return out;
+  }
+  let summaryByExchange = new Map(); let historyBySymbol = new Map(); let cacheReady = null;
+  function loadCache(){
+    if(cacheReady) return cacheReady;
+    cacheReady = Promise.all([ fetch(SUMMARY_URL).then(r=>r.text()), fetch(HISTORY_URL).then(r=>r.text()) ]).then(([sText,hText])=>{
+      const sLines = sText.split('\n').filter(Boolean);
+      for(let i=1;i<sLines.length;i++){
+        const [fullSymbol,name,type,ex,count,streakYears,streakDir,yieldPct] = parseCSVLine(sLines[i]);
+        if(!fullSymbol||!ex) continue;
+        if(!summaryByExchange.has(ex)) summaryByExchange.set(ex, []);
+        summaryByExchange.get(ex).push({ fullSymbol, name:(name||'').trim(), ex, yieldPct:parseFloat(yieldPct)||0 });
+      }
+      const hLines = hText.split('\n').filter(Boolean);
+      for(let i=1;i<hLines.length;i++){
+        const [fullSymbol,date,amount,currency,price] = parseCSVLine(hLines[i]);
+        if(!fullSymbol) continue;
+        if(!historyBySymbol.has(fullSymbol)) historyBySymbol.set(fullSymbol, []);
+        historyBySymbol.get(fullSymbol).push({ date, price: price?parseFloat(price):null });
+      }
+    }).catch(e=>console.warn('Cache load failed:', e.message));
+    return cacheReady;
+  }
+  const EXCHANGES = [
+    {g:'🇺🇸 United States',opts:['US','NYSE','NASDAQ','AMEX','PINK','OTCQB','OTCQX','BATS']},
+    {g:'🇨🇦 Canada',opts:['TO','V','NEO']}, {g:'🌎 Latin America',opts:['MX','SA','BA','SN','LIM']},
+    {g:'🇬🇧 United Kingdom',opts:['LSE','IL']},
+    {g:'🇩🇪 Germany',opts:['XETRA','F','STU','DU','BE','MU','HM','HA']},
+    {g:'🇱🇺 Luxembourg',opts:['LU']}, {g:'🇮🇪 Ireland',opts:['IR']},
+    {g:'🇫🇷 France',opts:['PA']}, {g:'🇳🇱 Netherlands',opts:['AS']}, {g:'🇧🇪 Belgium',opts:['BR']},
+    {g:'🇵🇹 Portugal',opts:['LS']}, {g:'🇨🇭 Switzerland',opts:['SW']}, {g:'🇪🇸 Spain',opts:['MC']},
+    {g:'🇦🇹 Austria',opts:['VI']}, {g:'🇬🇷 Greece',opts:['AT']},
+    {g:'🇸🇪 Scandinavia',opts:['ST','OL','CO','HE']},
+    {g:'🇵🇱 Eastern Europe',opts:['WAR','PR','BUD','RO','ZSE']},
+    {g:'🇷🇺 Russia',opts:['MCX']}, {g:'🇹🇷 Turkey',opts:['IS']}, {g:'🇮🇱 Israel',opts:['TA']},
+    {g:'🇿🇦 Africa',opts:['JSE','EGX','BC','XNAI','XZIM','XBOT','LUSE','GSE','USE','RSE','DSE','SEM','MSE','XNSA']},
+    {g:'🇭🇰 Hong Kong',opts:['HK']}, {g:'🇨🇳 China',opts:['SHG','SHE']},
+    {g:'🇰🇷 Korea',opts:['KO','KQ']}, {g:'🇮🇳 India',opts:['NSE']}, {g:'🇵🇰 Pakistan',opts:['KAR']},
+    {g:'🇱🇰 Sri Lanka',opts:['CM']}, {g:'🇸🇬 Southeast Asia',opts:['KLSE','BK','JK','VN','PSE']},
+    {g:'🇹🇼 Taiwan',opts:['TW','TWO']}, {g:'🇦🇺 Australia',opts:['AU']},
+  ];
+  function buildExchangeSelect(){
+    document.getElementById('exSelect').innerHTML = '<option value="">— Select Market —</option>' +
+      EXCHANGES.map(g=>`<optgroup label="${g.g}">${g.opts.map(o=>`<option value="${o}">${o}</option>`).join('')}</optgroup>`).join('');
+  }
+  let currentList = [], watchlist = [];
+  async function onExchangeChange(){
+    const ex = document.getElementById('exSelect').value;
+    document.getElementById('searchInput').value='';
+    if(!ex){ currentList=[]; renderPicker(); return; }
+    await loadCache();
+    currentList = (summaryByExchange.get(ex)||[]).slice().sort((a,b)=>b.yieldPct-a.yieldPct);
+    renderPicker();
+  }
+  function renderPicker(){
+    const q = document.getElementById('searchInput').value.toLowerCase().trim();
+    const list = document.getElementById('pickerList');
+    const rows = currentList.filter(r=>!q || r.fullSymbol.toLowerCase().includes(q) || r.name.toLowerCase().includes(q)).slice(0,200);
+    list.innerHTML = rows.length ? rows.map(r=>`<div class="picker-item" onclick="addToWatchlist('${r.fullSymbol}','${r.name.replace(/'/g,"&apos;")}')"><span class="sym">${r.fullSymbol}</span><span>${r.name}</span></div>`).join('') : '<div class="empty">No matches.</div>';
+  }
+  function addToWatchlist(sym,name){
+    if(watchlist.find(w=>w.sym===sym) || watchlist.length>=8) return;
+    watchlist.push({sym,name});
+    renderChips();
+  }
+  function removeFromWatchlist(sym){ watchlist = watchlist.filter(w=>w.sym!==sym); renderChips(); }
+  function renderChips(){
+    document.getElementById('watchlistChips').innerHTML = watchlist.length ?
+      watchlist.map(w=>`<span class="wl-row">${w.sym}<button onclick="removeFromWatchlist('${w.sym}')">✕</button></span>`).join('') :
+      '<span style="font-family:var(--mono);font-size:11px;color:var(--muted)">No symbols added yet.</span>';
+  }
+
+  function pearson(xs, ys){
+    const n = xs.length;
+    const mx = xs.reduce((s,v)=>s+v,0)/n, my = ys.reduce((s,v)=>s+v,0)/n;
+    let num=0, dx=0, dy=0;
+    for(let i=0;i<n;i++){ num += (xs[i]-mx)*(ys[i]-my); dx += (xs[i]-mx)**2; dy += (ys[i]-my)**2; }
+    const denom = Math.sqrt(dx*dy);
+    return denom>0 ? num/denom : null;
+  }
+
+  function annualReturns(fullSymbol){
+    const hist = (historyBySymbol.get(fullSymbol)||[]).filter(h=>h.price>0).sort((a,b)=>new Date(a.date)-new Date(b.date));
+    const lastPriceByYear = {};
+    hist.forEach(h=>{ const y=new Date(h.date).getFullYear(); if(!y) return; lastPriceByYear[y]=h.price; }); // last one wins (sorted asc)
+    const years = Object.keys(lastPriceByYear).map(Number).sort((a,b)=>a-b);
+    const returns = {};
+    for(let i=1;i<years.length;i++){
+      const y0=years[i-1], y1=years[i];
+      returns[y1] = Math.log(lastPriceByYear[y1]/lastPriceByYear[y0]);
+    }
+    return returns; // { year: logReturn }
+  }
+
+  function corrColor(r){
+    if(r>=0.7) return 'rgba(255,59,92,0.5)';
+    if(r<=-0.3) return 'rgba(0,255,136,0.45)';
+    return 'rgba(240,192,64,0.35)';
+  }
+
+  async function computeMatrix(){
+    if(watchlist.length<2){ alert('Add at least 2 symbols first.'); return; }
+    await loadCache();
+    const returnSeries = watchlist.map(w=>({ sym:w.sym, returns: annualReturns(w.sym) }));
+
+    let html = '<table class="matrix"><thead><tr><th></th>' + watchlist.map(w=>`<th>${w.sym}</th>`).join('') + '</tr></thead><tbody>';
+    for(let i=0;i<returnSeries.length;i++){
+      html += `<tr><th>${returnSeries[i].sym}</th>`;
+      for(let j=0;j<returnSeries.length;j++){
+        if(i===j){ html += '<td class="diag">1.00</td>'; continue; }
+        const commonYears = Object.keys(returnSeries[i].returns).filter(y=>returnSeries[j].returns[y]!==undefined);
+        if(commonYears.length<3){ html += '<td class="insufficient">n/a</td>'; continue; }
+        const xs = commonYears.map(y=>returnSeries[i].returns[y]);
+        const ys = commonYears.map(y=>returnSeries[j].returns[y]);
+        const r = pearson(xs, ys);
+        html += r!=null ? `<td style="background:${corrColor(r)}">${r.toFixed(2)}</td>` : '<td class="insufficient">n/a</td>';
+      }
+      html += '</tr>';
+    }
+    html += '</tbody></table>';
+
+    document.getElementById('matrixTableWrap').innerHTML = html;
+    document.getElementById('matrixResult').style.display = 'block';
+  }
+
+  buildExchangeSelect();
+  renderChips();
+</script>
+</body>
+</html>
