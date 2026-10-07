@@ -167,7 +167,17 @@
   }
 
   function annualReturns(fullSymbol){
-    const hist = (historyBySymbol.get(fullSymbol)||[]).filter(h=>h.price>0 && !(h.pctOfPrice>50)).sort((a,b)=>new Date(a.date)-new Date(b.date));
+    let hist = (historyBySymbol.get(fullSymbol)||[]).filter(h=>h.price>0 && !(h.pctOfPrice>50)).sort((a,b)=>new Date(a.date)-new Date(b.date));
+    // Second, independent artifact class: an isolated price SPIKE or DIP vs.
+    // both chronological neighbors (normal pctOfPrice, so the filter above
+    // doesn't catch it). Would otherwise get picked as a year's
+    // representative "last price" and fabricate that year's return.
+    hist = hist.filter((h,i,arr)=>{
+      if(i===0 || i===arr.length-1) return true;
+      const prev=arr[i-1].price, cur=h.price, next=arr[i+1].price;
+      if(!(prev>0) || !(next>0)) return true;
+      return !((cur>prev*5 && cur>next*5) || (cur<prev/5 && cur<next/5));
+    });
     const lastPriceByYear = {};
     hist.forEach(h=>{ const y=new Date(h.date).getFullYear(); if(!y) return; lastPriceByYear[y]=h.price; }); // last one wins (sorted asc)
     const years = Object.keys(lastPriceByYear).map(Number).sort((a,b)=>a-b);
