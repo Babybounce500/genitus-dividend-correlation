@@ -100,10 +100,10 @@
       }
       const hLines = hText.split('\n').filter(Boolean);
       for(let i=1;i<hLines.length;i++){
-        const [fullSymbol,date,amount,currency,price] = parseCSVLine(hLines[i]);
+        const [fullSymbol,date,amount,currency,price,pct] = parseCSVLine(hLines[i]);
         if(!fullSymbol) continue;
         if(!historyBySymbol.has(fullSymbol)) historyBySymbol.set(fullSymbol, []);
-        historyBySymbol.get(fullSymbol).push({ date, price: price?parseFloat(price):null });
+        historyBySymbol.get(fullSymbol).push({ date, price: price?parseFloat(price):null, pctOfPrice: pct?parseFloat(pct):null });
       }
     }).catch(e=>console.warn('Cache load failed:', e.message));
     return cacheReady;
@@ -167,7 +167,7 @@
   }
 
   function annualReturns(fullSymbol){
-    const hist = (historyBySymbol.get(fullSymbol)||[]).filter(h=>h.price>0).sort((a,b)=>new Date(a.date)-new Date(b.date));
+    const hist = (historyBySymbol.get(fullSymbol)||[]).filter(h=>h.price>0 && !(h.pctOfPrice>50)).sort((a,b)=>new Date(a.date)-new Date(b.date));
     const lastPriceByYear = {};
     hist.forEach(h=>{ const y=new Date(h.date).getFullYear(); if(!y) return; lastPriceByYear[y]=h.price; }); // last one wins (sorted asc)
     const years = Object.keys(lastPriceByYear).map(Number).sort((a,b)=>a-b);
