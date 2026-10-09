@@ -185,9 +185,29 @@
     for(let i=1;i<years.length;i++){
       const y0=years[i-1], y1=years[i];
       if(y1-y0 !== 1) continue; // gap (e.g. a dividend suspension) -- don't compute a "1-year" return spanning multiple years
+      if(isSplitLike(lastPriceByYear[y0], lastPriceByYear[y1])) continue; // a real stock split between these two years' last prices, not a real -90%-style "return" (see isSplitLike)
       returns[y1] = Math.log(lastPriceByYear[y1]/lastPriceByYear[y0]);
     }
     return returns; // { year: logReturn }
+  }
+
+  // A real stock split (e.g. WMT 3:1 in 02/2024, NVDA 10:1 in 06/2024) is not
+  // retroactively adjusted in the cached PriceOnDate history -- it shows up as
+  // a sustained, multi-period price-level shift close to a round ratio (2x,
+  // 3x, 10x, ...), unlike the isolated single-point spike/dip filtered above.
+  // Comparing prices across such a boundary fabricates a fake return/ratio.
+  function isSplitLike(p1, p2){
+    // No round-ratio matching: validated against real WMT data (3:1 split,
+    // 23.02.2024) that the ratio between two quarterly-spaced dividend dates
+    // is 2.50x, not a clean 3.0x (price also drifted organically in between)
+    // -- a tight "close to 2/3/4/5/10/20/50x" check misses this. A >=1.8x
+    // level shift between two dividend-payment-dated prices (usually ~3
+    // months apart) for an established payer is essentially always a split
+    // or a data fault, never organic -- safer to break the series here than
+    // silently bridge a possible fabrication.
+    if(!(p1>0) || !(p2>0)) return false;
+    const r = p1>p2 ? p1/p2 : p2/p1;
+    return r >= 1.8;
   }
 
   function corrColor(r){
